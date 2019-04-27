@@ -20,7 +20,7 @@ def Usage():
     print('ss                           --both SUMMARY.md and skip')
     exit(0)
 
-class generateCover():
+class GenerateCover():
     coverColor = ({'name':'cover0', 'backgroundColor':(78,9,41), 'fontColor':(123, 31, 231)},
         {'name':'cover1', 'backgroundColor':(98,111,27), 'fontColor':(188, 125, 70)},
         {'name':'cover2', 'backgroundColor':(247,74,200), 'fontColor':(55, 249, 158)},
@@ -62,7 +62,6 @@ class generateCover():
             if coverName is None:
                 # use cover according to titleName
                 coverIndex = int(hashlib.sha256(titleName.encode('utf-8')).hexdigest(), 16)%len(self.coverColor)
-                print('use %s'%(self.coverColor[coverIndex]['name']))
                 cover = self.coverColor[coverIndex]
             else:
                 for c in self.coverColor:
@@ -72,6 +71,8 @@ class generateCover():
                 else:
                     print('%s not found!'%(os.path.join(self.coverDir, coverName)))
                     exit(0)
+
+        print('generate %s with %s'%(jpgName, cover['name']))
 
         bgcolor = cover['backgroundColor']
         #print('bgcolor : ', bgcolor)
@@ -116,12 +117,6 @@ class generateCover():
         lineLen = len(titleName)//(tmpWidth//width)
         lineLenPixel = lineLen*fontSize
 
-        # import textwrap
-        # lines = textwrap.wrap(titleName, width=lineLen)
-        # for line in lines:
-        #     print('line : ', line)
-        # exit(0)
-
         fontcolor = cover['fontColor']
         # print('titleStartX : %d, titleStartY : %d'%(titleStartX, titleStartY))
         pos = 0
@@ -134,12 +129,12 @@ class generateCover():
                 if realLineLenPixel < lineLenPixel:
                     text = titleName[pos:pos+lineLen+j]
                 elif realLineLenPixel > lineLenPixel:
-                    text = titleName[pos:pos+lineLen+j-2]
-                    pos = pos+lineLen+j-2
-                    break
-                else:
                     text = titleName[pos:pos+lineLen+j-1]
                     pos = pos+lineLen+j-1
+                    break
+                else:
+                    text = titleName[pos:pos+lineLen+j]
+                    pos = pos+lineLen+j
                     break
                 if pos+lineLen+j >= len(titleName):
                     pos = pos+lineLen+j
@@ -147,15 +142,15 @@ class generateCover():
 
             if i == 0:
                 lineLenPixel = draw.textsize(text, font=font)[0]
-            print('text : ', text)
-            print('size : ', draw.textsize(text, font=font)[0])
-            print('pos : ', pos, 'len : ', len(titleName))
-            print('lineLenPixel : ', lineLenPixel)
+            # print('text : ', text)
+            # print('size : ', draw.textsize(text, font=font)[0])
+            # print('pos : ', pos, 'len : ', len(titleName))
+            # print('lineLenPixel : ', lineLenPixel)
             draw.text((titleStartX, titleStartY+(i*fontSize)), text, font=font, fill=fontcolor, spacing=0, align='left')
         #释放画笔
         del draw
-        # im.save(jpgName, 'jpg')
-        im.save(jpgName, 'png')
+        im.save(jpgName, 'jpeg')
+        # im.save(jpgName, 'png')
 
 class Getch:
     """Gets a single character from standard input.  Does not echo to the
@@ -233,13 +228,13 @@ class Html2Book():
                 "right": 62,
                 "top": 36
             },
-            "pageNumbers": false,
+            "pageNumbers": true,
             "paperSize": "a4"
         },
         "plugins": [
             "katex"
         ],
-        "variables": {}
+        "variables": {"cover":"null"}
     }
     '''
     useCurSUMMARY = False
@@ -313,15 +308,16 @@ class Html2Book():
 
     def initBookJson(self, book_name, isKindle):
         if os.path.exists(self.bookConfigFile):
-            self.defaultBookJson = json.load(open(self.bookConfigFile, 'r'))
+            self.bookJson = json.load(open(self.bookConfigFile, 'r'))
         else:
-            self.defaultBookJson = json.loads(self.defaultBookJson)
-        self.defaultBookJson['title'] = book_name
+            self.bookJson = json.loads(self.defaultBookJson)
+        self.bookJson['title'] = book_name
         if isKindle:
-            self.defaultBookJson['pdf']['paperSize'] = "a5"
+            self.bookJson['pdf']['paperSize'] = "a5"
+            self.bookJson['pdf']['fontSize'] = 14
         else:
-            self.defaultBookJson['pdf']['paperSize'] = "a4"
-        json.dump(self.defaultBookJson, open(self.bookConfigFile, 'w'), indent=4)
+            self.bookJson['pdf']['paperSize'] = "a4"
+        json.dump(self.bookJson, open(self.bookConfigFile, 'w'), indent=4)
 
     def html2Markdown(self, h, rootIndexHtml):
         for f in h:
@@ -444,7 +440,7 @@ class Html2Book():
             print('gitbook mobi error')
             exit(0)
 
-    def generateBook(self):
+    def generateBook(self, cgencover):
         if self.reGenMDFileFlag and os.path.exists(self.mathPositionLog):
             print('             This project maybe contain math formula you can modify the markdown file which in the %s \n \
                 and then run gitbook build to build the book and run gitbook mobi to generator mobi book\n \
@@ -484,6 +480,17 @@ class Html2Book():
                 fpw.write('README')
 
         self.initBookJson(self.bookName, True)
+        try:
+            if self.bookJson['variables']['cover'] == "null":
+                cgencover.generateCover(self.bookName, self.kindleWidth, self.kindleHeight, self.titleFontSize)
+            elif self.bookJson['variables']['cover'] == "cur":
+                print('use ./cover.jpg as cover')
+            else:
+                print('generate cover with : %s'%(self.bookJson['variables']['cover']))
+                cgencover.generateCover(self.bookName, self.kindleWidth, self.kindleHeight, self.titleFontSize, self.bookJson['variables']['cover'])
+        except:
+            print('book.json variables\'s cover is null so  use default cover')
+            cgencover.generateCover(self.bookName, self.kindleWidth, self.kindleHeight, self.titleFontSize)
         self.gitbookInstallPlugins()
         self.gitbookBuild()
         if self.doAll:
@@ -501,10 +508,11 @@ if __name__ == '__main__':
         print('This project only support python3!')
         exit(0)
 
-    cgc = generateCover()
-    exit(0)
+    cgc = GenerateCover()
+    # cgc.generateCover('机器学习', 758, 1024, 48,'cover10')
+    # exit(0)
     chtml2book = Html2Book()
-    chtml2book.generateBook()
+    chtml2book.generateBook(cgc)
 
 
 

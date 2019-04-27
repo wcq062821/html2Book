@@ -1,8 +1,10 @@
 # html2Book
 
 #### 介绍
-把通过gitbook编译后的html目标文件反向生成markdown文件进而生成用于kindle的mobi格式电子书 以及适合kindle的pdf文件 及适合PC的pdf文件
-
+把通过gitbook编译后的html目标文件反向生成markdown文件进而生成用于kindle的mobi格式电子书  
+以及适合kindle的pdf文件  
+及适合PC的pdf文件
+自动生成book.json 支持自定义封面 不自定义则根据书名生成封面(书名不变样式不变)
 #### 软件架构
 软件架构说明
 
@@ -71,6 +73,33 @@ python3 html2Book.py bookName all ss
 
 在html有数学公式的情况下如果build出错 则根据错误信息改对应的markdown文件再手动跑命令  
 gitbook build
-再根据错误信息改markdown文件再build 改一处build一次因为大部分数学公式还是没问题的 也许改一两处就好了
+再根据错误信息改markdown文件再build 改一处build一次因为大部分数学公式还是没问题的 也许改一两处就好了  
+修改数学公式可以在线编辑: https://www.codecogs.com/latex/eqneditor.php  
+
+支持封面  
+默认生成的book.json中variables属性是:  
+
+```
+    "variables": {
+        "cover": "null"
+    }
+``` 
+
+表示根据书名生成封面(书名不变 封面样式不变)
+
+```
+        "cover": "cur"
+```
+
+根据根目录下的cover.jpg生成封面
+
+```
+        "cover": "coverN"
+```
+
+生成与./mycovers/coverN.jpg样式一样的封面
+
+
+
 
 
