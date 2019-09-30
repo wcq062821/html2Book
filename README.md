@@ -71,6 +71,8 @@ python3 html2Book.py bookName all ss
 在windows下可能会出现 Error with command "svgexport"错误
 解决办法: npm install svgexport -g
 
+若出现 EbookError: Error during ebook generation: 'ebook-convert' 则是没有安装 calibre 到 https://calibre-ebook.com/download_windows 下载安装 
+
 在html有数学公式的情况下如果build出错 则根据错误信息改对应的markdown文件再手动跑命令  
 gitbook build
 再根据错误信息改markdown文件再build 改一处build一次因为大部分数学公式还是没问题的 也许改一两处就好了  
